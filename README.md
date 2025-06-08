@@ -1,18 +1,26 @@
-#!/bin/bash
+#!/data/data/com.termux/files/usr/bin/bash
 
-# Atualizar sistema
-echo "[✔] Atualizando pacotes..."
+# Atualizar pacotes do Termux
+echo "[✔] Atualizando Termux..."
 apt update -y && apt upgrade -y
 
-# Instalar dependências necessárias
+# Instalar pacotes necessários
 echo "[✔] Instalando dependências..."
-pkg install -y git python-pip termux-api sendemail
+pkg install -y git termux-api sendemail
 
-# Criar script Ghost Park
-echo "[✔] Criando script Ghost Park..."
+# Clonar o repositório GhostPark
+echo "[✔] Baixando arquivos do Ghost Park..."
+rm -rf GhostPark
+git clone https://github.com/GhostPark-Men/GhostPark.git
+
+# Entrar na pasta
+cd GhostPark || { echo "❌ Falha ao acessar diretório GhostPark"; exit 1; }
+
+# Criar script ghostpark.sh dentro da pasta
+echo "[✔] Criando o script ghostpark.sh..."
 
 cat << 'EOF' > ghostpark.sh
-#!/bin/bash
+#!/data/data/com.termux/files/usr/bin/bash
 
 clear
 
@@ -57,10 +65,9 @@ done
 echo "✔️ Todas mensagens foram enviadas com sucesso."
 EOF
 
-# Dar permissão de execução
+# Tornar executável
 chmod +x ghostpark.sh
 
-# Executar o script
-echo
+# Rodar script
 echo "[✔] Iniciando Ghost Park..."
 ./ghostpark.sh
