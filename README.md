@@ -1,9 +1,16 @@
-# Atualizar Termux e instalar dependências
+#!/bin/bash
+
+# Atualizar sistema
+echo "[✔] Atualizando pacotes..."
 apt update -y && apt upgrade -y
-pkg install -y git python-pip termux-api
-pkg install -y sendemail
+
+# Instalar dependências necessárias
+echo "[✔] Instalando dependências..."
+pkg install -y git python-pip termux-api sendemail
 
 # Criar script Ghost Park
+echo "[✔] Criando script Ghost Park..."
+
 cat << 'EOF' > ghostpark.sh
 #!/bin/bash
 
@@ -50,8 +57,10 @@ done
 echo "✔️ Todas mensagens foram enviadas com sucesso."
 EOF
 
-# Tornar o script executável
+# Dar permissão de execução
 chmod +x ghostpark.sh
 
 # Executar o script
+echo
+echo "[✔] Iniciando Ghost Park..."
 ./ghostpark.sh
