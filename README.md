@@ -1,9 +1,9 @@
--- GHOST PARK Hub por Iguatu (Fly + Fling com estilo preto e roxo)
+-- GHOST PARK v2 (Corrigido Fly + Fling com busca parcial e toggle)
 
--- GUI
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
+-- GUI
 local gui = Instance.new("ScreenGui", game.CoreGui)
 gui.Name = "GHOSTPARK_Hub"
 
@@ -16,14 +16,13 @@ frame.BorderSizePixel = 0
 -- Título
 local title = Instance.new("TextLabel", frame)
 title.Size = UDim2.new(1, 0, 0, 30)
-title.Position = UDim2.new(0, 0, 0, 0)
 title.Text = "👻 GHOST PARK"
 title.TextColor3 = Color3.fromRGB(180, 0, 255)
 title.BackgroundTransparency = 1
 title.Font = Enum.Font.GothamBlack
 title.TextSize = 20
 
--- Botão Fly
+-- Fly Button
 local flyBtn = Instance.new("TextButton", frame)
 flyBtn.Size = UDim2.new(0, 120, 0, 40)
 flyBtn.Position = UDim2.new(0, 20, 0, 50)
@@ -33,17 +32,17 @@ flyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 flyBtn.Font = Enum.Font.Gotham
 flyBtn.TextSize = 16
 
--- Campo Nome do Jogador
+-- Nome jogador
 local nomeBox = Instance.new("TextBox", frame)
 nomeBox.Size = UDim2.new(0, 180, 0, 35)
 nomeBox.Position = UDim2.new(0, 20, 0, 110)
-nomeBox.PlaceholderText = "Digite o nome do jogador"
+nomeBox.PlaceholderText = "Nome do jogador (3+ letras)"
 nomeBox.BackgroundColor3 = Color3.fromRGB(40, 0, 60)
 nomeBox.TextColor3 = Color3.new(1,1,1)
 nomeBox.Font = Enum.Font.Gotham
 nomeBox.TextSize = 14
 
--- Botão Fling
+-- Fling Button
 local flingBtn = Instance.new("TextButton", frame)
 flingBtn.Size = UDim2.new(0, 80, 0, 35)
 flingBtn.Position = UDim2.new(0, 210, 0, 110)
@@ -53,68 +52,104 @@ flingBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 flingBtn.Font = Enum.Font.GothamBold
 flingBtn.TextSize = 14
 
--- Função de Fly
-local function startFly()
+-- Fly Function
+local flying = false
+local flyConn
+
+local function toggleFly()
 	local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
 	local hrp = char:WaitForChild("HumanoidRootPart")
-	local bv = Instance.new("BodyVelocity", hrp)
-	bv.MaxForce = Vector3.new(1,1,1) * math.huge
-	bv.Velocity = Vector3.zero
 
-	local UIS = game:GetService("UserInputService")
-	local dir = Vector3.zero
-	local speed = 60
-	local flying = true
+	if flying then
+		flying = false
+		if hrp:FindFirstChild("FlyVelocity") then hrp.FlyVelocity:Destroy() end
+		if flyConn then flyConn:Disconnect() end
+		flyBtn.Text = "🕊️ Ativar Fly"
+	else
+		flying = true
+		local bv = Instance.new("BodyVelocity", hrp)
+		bv.Name = "FlyVelocity"
+		bv.MaxForce = Vector3.new(1,1,1) * 1e5
+		bv.Velocity = Vector3.zero
+		flyBtn.Text = "🛑 Desativar Fly"
 
-	UIS.InputBegan:Connect(function(i)
-		if i.KeyCode == Enum.KeyCode.W then dir = Vector3.new(0,0,-1) end
-		if i.KeyCode == Enum.KeyCode.S then dir = Vector3.new(0,0,1) end
-		if i.KeyCode == Enum.KeyCode.A then dir = Vector3.new(-1,0,0) end
-		if i.KeyCode == Enum.KeyCode.D then dir = Vector3.new(1,0,0) end
-	end)
+		local UIS = game:GetService("UserInputService")
+		local cam = workspace.CurrentCamera
+		local moveVec = Vector3.zero
 
-	UIS.InputEnded:Connect(function(_) dir = Vector3.zero end)
-
-	coroutine.wrap(function()
-		while flying and bv.Parent do
-			task.wait()
-			bv.Velocity = (workspace.CurrentCamera.CFrame:VectorToWorldSpace(dir)) * speed
+		local function updateVelocity()
+			if not flying or not bv or not hrp then return end
+			bv.Velocity = cam.CFrame:VectorToWorldSpace(moveVec) * 60
 		end
-	end)()
+
+		UIS.InputBegan:Connect(function(i)
+			if i.UserInputType == Enum.UserInputType.Keyboard then
+				if i.KeyCode == Enum.KeyCode.W then moveVec = moveVec + Vector3.new(0,0,-1) end
+				if i.KeyCode == Enum.KeyCode.S then moveVec = moveVec + Vector3.new(0,0,1) end
+				if i.KeyCode == Enum.KeyCode.A then moveVec = moveVec + Vector3.new(-1,0,0) end
+				if i.KeyCode == Enum.KeyCode.D then moveVec = moveVec + Vector3.new(1,0,0) end
+				if i.KeyCode == Enum.KeyCode.Space then moveVec = moveVec + Vector3.new(0,1,0) end
+				if i.KeyCode == Enum.KeyCode.LeftShift then moveVec = moveVec + Vector3.new(0,-1,0) end
+			end
+		end)
+
+		UIS.InputEnded:Connect(function(i)
+			if i.UserInputType == Enum.UserInputType.Keyboard then
+				if i.KeyCode == Enum.KeyCode.W then moveVec = moveVec - Vector3.new(0,0,-1) end
+				if i.KeyCode == Enum.KeyCode.S then moveVec = moveVec - Vector3.new(0,0,1) end
+				if i.KeyCode == Enum.KeyCode.A then moveVec = moveVec - Vector3.new(-1,0,0) end
+				if i.KeyCode == Enum.KeyCode.D then moveVec = moveVec - Vector3.new(1,0,0) end
+				if i.KeyCode == Enum.KeyCode.Space then moveVec = moveVec - Vector3.new(0,1,0) end
+				if i.KeyCode == Enum.KeyCode.LeftShift then moveVec = moveVec - Vector3.new(0,-1,0) end
+			end
+		end)
+
+		flyConn = game:GetService("RunService").Heartbeat:Connect(updateVelocity)
+	end
 end
 
-flyBtn.MouseButton1Click:Connect(function()
-	startFly()
-end)
+flyBtn.MouseButton1Click:Connect(toggleFly)
 
--- Função de Fling
-local function flingPlayerByName(name)
-	local target = Players:FindFirstChild(name)
-	if not target or not target.Character then return warn("Jogador não encontrado.") end
+-- Fling Function
+local function getPlayerByPartialName(partial)
+	partial = partial:lower()
+	for _, p in ipairs(Players:GetPlayers()) do
+		if p ~= LocalPlayer and p.Name:lower():sub(1, #partial) == partial then
+			return p
+		end
+	end
+end
+
+local function flingPlayerByName(partialName)
+	local target = getPlayerByPartialName(partialName)
+	if not target or not target.Character then
+		warn("Jogador não encontrado.")
+		return
+	end
 
 	local hrp = LocalPlayer.Character:WaitForChild("HumanoidRootPart")
-	local targetHrp = target.Character:WaitForChild("HumanoidRootPart")
+	local targetHRP = target.Character:WaitForChild("HumanoidRootPart")
 
 	local bp = Instance.new("BodyPosition", hrp)
 	bp.MaxForce = Vector3.new(1,1,1) * math.huge
-	bp.Position = targetHrp.Position
+	bp.Position = targetHRP.Position
 
 	local bg = Instance.new("BodyGyro", hrp)
 	bg.MaxTorque = Vector3.new(1,1,1) * math.huge
 	bg.CFrame = hrp.CFrame
 
 	coroutine.wrap(function()
-		while task.wait() do
-			if not target or not target.Character or not target.Character:FindFirstChild("HumanoidRootPart") then break end
-			bp.Position = target.Character.HumanoidRootPart.Position
-			hrp.CFrame = hrp.CFrame * CFrame.Angles(0, math.rad(1000), 0)
+		while targetHRP and targetHRP.Parent and bp.Parent and bg.Parent do
+			task.wait()
+			bp.Position = targetHRP.Position
+			bg.CFrame = bg.CFrame * CFrame.Angles(0, math.rad(1000), 0)
 		end
 	end)()
 end
 
 flingBtn.MouseButton1Click:Connect(function()
-	local nome = nomeBox.Text
-	if nome and nome ~= "" then
-		flingPlayerByName(nome)
+	local input = nomeBox.Text
+	if input and #input >= 3 then
+		flingPlayerByName(input)
 	end
 end)
